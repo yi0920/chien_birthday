@@ -1,0 +1,496 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>臺灣捷運轉盤 Demo</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f6f2ea;
+      --ink: #251f18;
+      --muted: #6d6256;
+      --panel: #fffaf2;
+      --line: #d7cfc3;
+      --accent: #006b5f;
+      --accent-ink: #ffffff;
+      --red: #d74838;
+      --yellow: #f5b84b;
+      --blue: #2f6fbd;
+      --green: #3f8f5f;
+      --orange: #d66b2d;
+      --purple: #7755a6;
+      --shadow: 0 18px 45px rgb(66 47 21 / 16%);
+      font-family: "Microsoft JhengHei", "PingFang TC", system-ui, sans-serif;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #171819;
+        --ink: #f4eee5;
+        --muted: #bfb4a8;
+        --panel: #242525;
+        --line: #45413a;
+        --shadow: 0 18px 45px rgb(0 0 0 / 32%);
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100svh;
+      background:
+        linear-gradient(135deg, rgb(0 107 95 / 10%), transparent 38%),
+        linear-gradient(315deg, rgb(215 72 56 / 10%), transparent 42%),
+        var(--bg);
+      color: var(--ink);
+    }
+
+    main {
+      width: min(1120px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 26px 0 34px;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: minmax(300px, 1fr) minmax(280px, 420px);
+      gap: 22px;
+      align-items: center;
+    }
+
+    .wheel-wrap {
+      position: relative;
+      display: grid;
+      place-items: center;
+      min-height: 420px;
+      padding: 18px;
+    }
+
+    canvas {
+      width: min(82vw, 590px);
+      max-width: 100%;
+      aspect-ratio: 1;
+      filter: drop-shadow(var(--shadow));
+    }
+
+    .pointer {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      width: 0;
+      height: 0;
+      border-left: 18px solid transparent;
+      border-right: 18px solid transparent;
+      border-top: 38px solid var(--red);
+      transform: translateX(-50%);
+      filter: drop-shadow(0 5px 7px rgb(0 0 0 / 20%));
+      z-index: 2;
+    }
+
+    .hub {
+      position: absolute;
+      display: grid;
+      place-items: center;
+      width: clamp(92px, 17vw, 126px);
+      aspect-ratio: 1;
+      border-radius: 50%;
+      border: 8px solid var(--panel);
+      background: var(--accent);
+      color: var(--accent-ink);
+      font-weight: 700;
+      box-shadow: 0 10px 24px rgb(0 0 0 / 22%);
+      pointer-events: none;
+    }
+
+    .panel {
+      background: color-mix(in srgb, var(--panel), transparent 4%);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 22px;
+      box-shadow: var(--shadow);
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: clamp(28px, 5vw, 50px);
+      line-height: 1.04;
+      letter-spacing: 0;
+    }
+
+    .sub {
+      margin: 0 0 18px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .result {
+      display: grid;
+      gap: 6px;
+      margin: 18px 0;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--bg), var(--panel) 65%);
+    }
+
+    .label {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .station {
+      min-height: 42px;
+      font-size: clamp(25px, 7vw, 42px);
+      font-weight: 700;
+      line-height: 1.15;
+      overflow-wrap: anywhere;
+    }
+
+    .meta {
+      color: var(--muted);
+      min-height: 1.4em;
+    }
+
+    button {
+      width: 100%;
+      min-height: 54px;
+      border: 0;
+      border-radius: 8px;
+      background: var(--accent);
+      color: var(--accent-ink);
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 8px 18px rgb(0 107 95 / 22%);
+    }
+
+    button:disabled {
+      cursor: wait;
+      opacity: .72;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .stat {
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+    }
+
+    .stat strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 22px;
+    }
+
+    details {
+      margin-top: 16px;
+    }
+
+    summary {
+      cursor: pointer;
+      color: var(--muted);
+    }
+
+    .list {
+      margin-top: 10px;
+      max-height: 190px;
+      overflow: auto;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--muted);
+      line-height: 1.7;
+      font-size: 14px;
+    }
+
+    @media (max-width: 820px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+
+      .wheel-wrap {
+        min-height: auto;
+        padding: 8px 0 0;
+      }
+
+      .pointer {
+        top: 0;
+      }
+
+      .panel {
+        padding: 18px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="app">
+      <section class="wheel-wrap" aria-label="臺灣捷運目的地轉盤">
+        <div class="pointer" aria-hidden="true"></div>
+        <canvas id="wheel" width="900" height="900"></canvas>
+        <div class="hub">SPIN</div>
+      </section>
+
+      <section class="panel">
+        <h1>捷運去哪裡</h1>
+        <p class="sub">抽到哪一站就出發。Demo 內建臺灣已營運捷運、輕軌系統的站名池。</p>
+
+        <button id="spinButton" type="button">開始轉盤</button>
+
+        <div class="result" aria-live="polite">
+          <span class="label">目的地</span>
+          <div class="station" id="result">尚未開轉</div>
+          <div class="meta" id="resultMeta">按下按鈕決定今天要去哪。</div>
+        </div>
+
+        <div class="stats">
+          <div class="stat">
+            <span class="label">站名池</span>
+            <strong id="stationCount">0</strong>
+          </div>
+          <div class="stat">
+            <span class="label">目前時間</span>
+            <strong id="clock">--:--</strong>
+          </div>
+        </div>
+
+        <details>
+          <summary>查看內建站名</summary>
+          <div class="list" id="stationList"></div>
+        </details>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const systems = [
+      {
+        name: "臺北捷運",
+        stations: [
+          "動物園", "木柵", "萬芳社區", "萬芳醫院", "辛亥", "麟光", "六張犁", "科技大樓", "大安",
+          "忠孝復興", "南京復興", "中山國中", "松山機場", "大直", "劍南路", "西湖", "港墘", "文德",
+          "內湖", "大湖公園", "葫洲", "東湖", "南港軟體園區", "臺北南港展覽館",
+          "淡水", "紅樹林", "竹圍", "關渡", "忠義", "復興崗", "北投", "新北投", "奇岩", "唭哩岸",
+          "石牌", "明德", "芝山", "士林", "劍潭", "圓山", "民權西路", "雙連", "中山", "臺北車站",
+          "臺大醫院", "中正紀念堂", "東門", "大安森林公園", "信義安和", "臺北101/世貿", "象山",
+          "松山", "南京三民", "台北小巨蛋", "南京復興", "松江南京", "中山", "北門", "西門",
+          "小南門", "中正紀念堂", "古亭", "台電大樓", "公館", "萬隆", "景美", "大坪林", "七張",
+          "小碧潭", "新店區公所", "新店",
+          "南勢角", "景安", "永安市場", "頂溪", "古亭", "東門", "忠孝新生", "松江南京", "行天宮",
+          "中山國小", "民權西路", "大橋頭", "台北橋", "菜寮", "三重", "先嗇宮", "頭前庄", "新莊",
+          "輔大", "丹鳳", "迴龍", "三重國小", "三和國中", "徐匯中學", "三民高中", "蘆洲",
+          "頂埔", "永寧", "土城", "海山", "亞東醫院", "府中", "板橋", "新埔", "江子翠", "龍山寺",
+          "西門", "臺北車站", "善導寺", "忠孝新生", "忠孝復興", "忠孝敦化", "國父紀念館", "市政府",
+          "永春", "後山埤", "昆陽", "南港", "臺北南港展覽館"
+        ]
+      },
+      {
+        name: "新北捷運",
+        stations: [
+          "大坪林", "十四張", "秀朗橋", "景平", "景安", "中和", "橋和", "中原", "板新", "板橋",
+          "新埔民生", "頭前庄", "幸福", "新北產業園區",
+          "紅樹林", "竿蓁林", "淡金鄧公", "淡江大學", "淡金北新", "新市一路", "淡水行政中心",
+          "濱海義山", "濱海沙崙", "淡海新市鎮", "崁頂", "台北海洋大學", "沙崙", "淡水漁人碼頭",
+          "十四張", "新和國小", "陽光運動公園", "安康", "景文科大", "耕莘安康院區", "台北小城",
+          "玫瑰中國城", "雙城"
+        ]
+      },
+      {
+        name: "桃園捷運",
+        stations: [
+          "台北車站", "三重", "新北產業園區", "新莊副都心", "泰山", "泰山貴和", "體育大學",
+          "長庚醫院", "林口", "山鼻", "坑口", "機場第一航廈", "機場第二航廈", "機場旅館", "大園",
+          "橫山", "領航", "高鐵桃園站", "桃園體育園區", "興南", "環北", "老街溪"
+        ]
+      },
+      {
+        name: "臺中捷運",
+        stations: [
+          "北屯總站", "舊社", "松竹", "四維國小", "文心崇德", "文心中清", "文華高中", "文心櫻花",
+          "市政府", "水安宮", "文心森林公園", "南屯", "豐樂公園", "大慶", "九張犁", "九德",
+          "烏日", "高鐵臺中站"
+        ]
+      },
+      {
+        name: "高雄捷運",
+        stations: [
+          "岡山車站", "岡山高醫", "橋頭火車站", "橋頭糖廠", "青埔", "都會公園", "後勁", "楠梓加工區",
+          "油廠國小", "世運", "左營", "生態園區", "巨蛋", "凹子底", "後驛", "高雄車站", "美麗島",
+          "中央公園", "三多商圈", "獅甲", "凱旋", "前鎮高中", "草衙", "高雄國際機場", "小港",
+          "西子灣", "鹽埕埔", "市議會", "美麗島", "信義國小", "文化中心", "五塊厝", "技擊館",
+          "衛武營", "鳳山西站", "鳳山", "大東", "鳳山國中", "大寮",
+          "籬仔內", "凱旋瑞田", "前鎮之星", "凱旋中華", "夢時代", "經貿園區", "軟體園區", "高雄展覽館",
+          "旅運中心", "光榮碼頭", "真愛碼頭", "駁二大義", "駁二蓬萊", "哈瑪星", "壽山公園", "文武聖殿",
+          "鼓山區公所", "鼓山", "馬卡道", "臺鐵美術館", "內惟藝術中心", "美術館", "聯合醫院", "龍華國小",
+          "愛河之心", "新上國小", "灣仔內", "鼎山街", "高雄高工", "樹德家商", "科工館", "聖功醫院",
+          "凱旋公園", "衛生局", "五權國小", "凱旋武昌"
+        ]
+      }
+    ];
+
+    const allStations = systems.flatMap((system) =>
+      system.stations.map((station) => ({ station, system: system.name }))
+    );
+
+    const CONFIG = {
+      // 是否啟用鎖定結果。true = 啟用，false = 完全隨機。
+      LOCK_ENABLED: true,
+
+      // 從這個時間之後開始鎖定結果，格式為 HH:mm，24 小時制。
+      LOCK_AFTER_TIME: "18:00",
+
+      // 鎖定後一定會轉到的站名。
+      LOCK_STATION: "臺北車站"
+    };
+    const canvas = document.getElementById("wheel");
+    const ctx = canvas.getContext("2d");
+    const spinButton = document.getElementById("spinButton");
+    const result = document.getElementById("result");
+    const resultMeta = document.getElementById("resultMeta");
+    const stationCount = document.getElementById("stationCount");
+    const stationList = document.getElementById("stationList");
+    const clock = document.getElementById("clock");
+    const colors = ["#d74838", "#f5b84b", "#3f8f5f", "#2f6fbd", "#7755a6", "#d66b2d"];
+    let rotation = -Math.PI / 2;
+    let spinning = false;
+
+    function isForcedTime() {
+      if (!CONFIG.LOCK_ENABLED) return false;
+
+      const [hourText, minuteText = "0"] = CONFIG.LOCK_AFTER_TIME.split(":");
+      const lockHour = Number(hourText);
+      const lockMinute = Number(minuteText);
+      const now = new Date();
+
+      if (!Number.isFinite(lockHour) || !Number.isFinite(lockMinute)) return false;
+      return now.getHours() * 60 + now.getMinutes() >= lockHour * 60 + lockMinute;
+    }
+
+    function pickStation() {
+      if (isForcedTime()) {
+        return allStations.find((item) => item.station === CONFIG.LOCK_STATION) || allStations[0];
+      }
+      return allStations[Math.floor(Math.random() * allStations.length)];
+    }
+
+    function drawWheel(activeIndex = -1) {
+      const size = canvas.width;
+      const center = size / 2;
+      const radius = center - 28;
+      const slice = (Math.PI * 2) / allStations.length;
+      ctx.clearRect(0, 0, size, size);
+      ctx.save();
+      ctx.translate(center, center);
+      ctx.rotate(rotation);
+
+      allStations.forEach((item, index) => {
+        const start = index * slice;
+        const end = start + slice;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.arc(0, 0, radius, start, end);
+        ctx.closePath();
+        ctx.fillStyle = index === activeIndex ? "#251f18" : colors[index % colors.length];
+        ctx.fill();
+
+        ctx.strokeStyle = "rgba(255, 255, 255, .38)";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        if (index % 8 === 0) {
+          ctx.save();
+          ctx.rotate(start + slice / 2);
+          ctx.textAlign = "right";
+          ctx.fillStyle = "#fffaf2";
+          ctx.font = "500 22px Microsoft JhengHei, sans-serif";
+          ctx.fillText(item.station, radius - 18, 8);
+          ctx.restore();
+        }
+      });
+
+      ctx.beginPath();
+      ctx.arc(0, 0, radius, 0, Math.PI * 2);
+      ctx.strokeStyle = "rgba(37, 31, 24, .7)";
+      ctx.lineWidth = 12;
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function indexForStation(target) {
+      return allStations.findIndex((item) => item.station === target.station && item.system === target.system);
+    }
+
+    function spin() {
+      if (spinning) return;
+      spinning = true;
+      spinButton.disabled = true;
+      result.textContent = "轉動中...";
+      resultMeta.textContent = "命運正在進站。";
+
+      const target = pickStation();
+      const targetIndex = Math.max(0, indexForStation(target));
+      const slice = (Math.PI * 2) / allStations.length;
+      const current = rotation % (Math.PI * 2);
+      const pointerAngle = -Math.PI / 2;
+      const targetCenter = targetIndex * slice + slice / 2;
+      const desired = pointerAngle - targetCenter;
+      const fullTurns = 8 + Math.floor(Math.random() * 3);
+      const delta = fullTurns * Math.PI * 2 + normalizeAngle(desired - current);
+      const start = rotation;
+      const finish = start + delta;
+      const duration = 4300;
+      const startedAt = performance.now();
+
+      function animate(now) {
+        const t = Math.min(1, (now - startedAt) / duration);
+        const eased = 1 - Math.pow(1 - t, 4);
+        rotation = start + (finish - start) * eased;
+        drawWheel(targetIndex);
+        if (t < 1) {
+          requestAnimationFrame(animate);
+          return;
+        }
+
+        rotation = finish;
+        drawWheel(targetIndex);
+        result.textContent = target.station;
+        resultMeta.textContent = `${target.system} · 本次結果`;
+        spinButton.disabled = false;
+        spinning = false;
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    function normalizeAngle(angle) {
+      const full = Math.PI * 2;
+      return ((angle % full) + full) % full;
+    }
+
+    function updateClock() {
+      const now = new Date();
+      clock.textContent = now.toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit" });
+    }
+
+    stationCount.textContent = allStations.length;
+    stationList.textContent = systems
+      .map((system) => `${system.name}: ${system.stations.join("、")}`)
+      .join("\n\n");
+    spinButton.addEventListener("click", spin);
+    updateClock();
+    setInterval(updateClock, 1000);
+    drawWheel();
+  </script>
+</body>
+</html>
