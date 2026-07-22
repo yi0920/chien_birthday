@@ -14,6 +14,8 @@
       --line: #d7cfc3;
       --accent: #006b5f;
       --accent-ink: #ffffff;
+      --accent2: #b6472f;
+      --accent2-ink: #ffffff;
       --red: #d74838;
       --yellow: #f5b84b;
       --blue: #2f6fbd;
@@ -55,6 +57,28 @@
       padding: 26px 0 34px;
     }
 
+    .section-divider {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin: 40px 0 18px;
+    }
+
+    .section-divider::before,
+    .section-divider::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: var(--line);
+    }
+
+    .section-title {
+      font-size: clamp(18px, 3vw, 24px);
+      font-weight: 700;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
     .app {
       display: grid;
       grid-template-columns: minmax(300px, 1fr) minmax(280px, 420px);
@@ -91,6 +115,10 @@
       z-index: 2;
     }
 
+    .pointer.pointer-alt {
+      border-top-color: var(--accent2);
+    }
+
     .hub {
       position: absolute;
       display: grid;
@@ -106,6 +134,11 @@
       pointer-events: none;
     }
 
+    .hub.hub-alt {
+      background: var(--accent2);
+      color: var(--accent2-ink);
+    }
+
     .panel {
       background: color-mix(in srgb, var(--panel), transparent 4%);
       border: 1px solid var(--line);
@@ -119,6 +152,10 @@
       font-size: clamp(28px, 5vw, 50px);
       line-height: 1.04;
       letter-spacing: 0;
+    }
+
+    h1.h1-alt {
+      color: var(--accent2);
     }
 
     .sub {
@@ -166,6 +203,11 @@
       font-weight: 700;
       cursor: pointer;
       box-shadow: 0 8px 18px rgb(0 107 95 / 22%);
+    }
+
+    button.button-alt {
+      background: var(--accent2);
+      box-shadow: 0 8px 18px rgb(182 71 47 / 22%);
     }
 
     button:disabled {
@@ -238,7 +280,7 @@
     <div class="app">
       <section class="wheel-wrap" aria-label="臺灣捷運目的地轉盤">
         <div class="pointer" aria-hidden="true"></div>
-        <canvas id="wheel" width="900" height="900"></canvas>
+        <canvas id="wheel-station" width="900" height="900"></canvas>
         <div class="hub">SPIN</div>
       </section>
 
@@ -246,34 +288,76 @@
         <h1>捷運去哪裡</h1>
         <p class="sub">抽到哪一站就出發。Demo 內建臺灣已營運捷運、輕軌系統的站名池。</p>
 
-        <button id="spinButton" type="button">開始轉盤</button>
+        <button id="spinButton-station" type="button">開始轉盤</button>
 
         <div class="result" aria-live="polite">
           <span class="label">目的地</span>
-          <div class="station" id="result">尚未開轉</div>
-          <div class="meta" id="resultMeta">按下按鈕決定今天要去哪。</div>
+          <div class="station" id="result-station">尚未開轉</div>
+          <div class="meta" id="resultMeta-station">按下按鈕決定今天要去哪。</div>
         </div>
 
         <div class="stats">
           <div class="stat">
             <span class="label">站名池</span>
-            <strong id="stationCount">0</strong>
+            <strong id="stationCount-station">0</strong>
           </div>
           <div class="stat">
             <span class="label">目前時間</span>
-            <strong id="clock">--:--</strong>
+            <strong id="clock-station">--:--</strong>
           </div>
         </div>
 
         <details>
           <summary>查看內建站名</summary>
-          <div class="list" id="stationList"></div>
+          <div class="list" id="stationList-station"></div>
+        </details>
+      </section>
+    </div>
+
+    <div class="section-divider">
+      <span class="section-title">轉盤 2：到站後要做什麼</span>
+    </div>
+
+    <div class="app">
+      <section class="wheel-wrap" aria-label="到站後行程轉盤">
+        <div class="pointer pointer-alt" aria-hidden="true"></div>
+        <canvas id="wheel-activity" width="900" height="900"></canvas>
+        <div class="hub hub-alt">SPIN</div>
+      </section>
+
+      <section class="panel">
+        <h1 class="h1-alt">到站要幹嘛</h1>
+        <p class="sub">出站之後，讓轉盤決定你要做什麼。</p>
+
+        <button id="spinButton-activity" class="button-alt" type="button">開始轉盤</button>
+
+        <div class="result" aria-live="polite">
+          <span class="label">行程</span>
+          <div class="station" id="result-activity">尚未開轉</div>
+          <div class="meta" id="resultMeta-activity">按下按鈕決定到站後要做什麼。</div>
+        </div>
+
+        <div class="stats">
+          <div class="stat">
+            <span class="label">選項池</span>
+            <strong id="stationCount-activity">0</strong>
+          </div>
+          <div class="stat">
+            <span class="label">目前時間</span>
+            <strong id="clock-activity">--:--</strong>
+          </div>
+        </div>
+
+        <details>
+          <summary>查看內建選項</summary>
+          <div class="list" id="stationList-activity"></div>
         </details>
       </section>
     </div>
   </main>
 
   <script>
+    // ---------- 資料來源 ----------
     const systems = [
       {
         name: "臺北捷運",
@@ -300,75 +384,54 @@
         stations: [
           "大坪林", "十四張", "秀朗橋", "景平", "景安", "中和", "橋和", "中原", "板新", "板橋",
           "新埔民生", "頭前庄", "幸福", "新北產業園區",
-          "紅樹林", "竿蓁林", "淡金鄧公", "淡江大學", "淡金北新", "新市一路", "淡水行政中心",
-          "濱海義山", "濱海沙崙", "淡海新市鎮", "崁頂", "台北海洋大學", "沙崙", "淡水漁人碼頭",
           "十四張", "新和國小", "陽光運動公園", "安康", "景文科大", "耕莘安康院區", "台北小城",
           "玫瑰中國城", "雙城"
-        ]
-      },
-      {
-        name: "桃園捷運",
-        stations: [
-          "台北車站", "三重", "新北產業園區", "新莊副都心", "泰山", "泰山貴和", "體育大學",
-          "長庚醫院", "林口", "山鼻", "坑口", "機場第一航廈", "機場第二航廈", "機場旅館", "大園",
-          "橫山", "領航", "高鐵桃園站", "桃園體育園區", "興南", "環北", "老街溪"
-        ]
-      },
-      {
-        name: "臺中捷運",
-        stations: [
-          "北屯總站", "舊社", "松竹", "四維國小", "文心崇德", "文心中清", "文華高中", "文心櫻花",
-          "市政府", "水安宮", "文心森林公園", "南屯", "豐樂公園", "大慶", "九張犁", "九德",
-          "烏日", "高鐵臺中站"
-        ]
-      },
-      {
-        name: "高雄捷運",
-        stations: [
-          "岡山車站", "岡山高醫", "橋頭火車站", "橋頭糖廠", "青埔", "都會公園", "後勁", "楠梓加工區",
-          "油廠國小", "世運", "左營", "生態園區", "巨蛋", "凹子底", "後驛", "高雄車站", "美麗島",
-          "中央公園", "三多商圈", "獅甲", "凱旋", "前鎮高中", "草衙", "高雄國際機場", "小港",
-          "西子灣", "鹽埕埔", "市議會", "美麗島", "信義國小", "文化中心", "五塊厝", "技擊館",
-          "衛武營", "鳳山西站", "鳳山", "大東", "鳳山國中", "大寮",
-          "籬仔內", "凱旋瑞田", "前鎮之星", "凱旋中華", "夢時代", "經貿園區", "軟體園區", "高雄展覽館",
-          "旅運中心", "光榮碼頭", "真愛碼頭", "駁二大義", "駁二蓬萊", "哈瑪星", "壽山公園", "文武聖殿",
-          "鼓山區公所", "鼓山", "馬卡道", "臺鐵美術館", "內惟藝術中心", "美術館", "聯合醫院", "龍華國小",
-          "愛河之心", "新上國小", "灣仔內", "鼎山街", "高雄高工", "樹德家商", "科工館", "聖功醫院",
-          "凱旋公園", "衛生局", "五權國小", "凱旋武昌"
         ]
       }
     ];
 
-    const allStations = systems.flatMap((system) =>
-      system.stations.map((station) => ({ station, system: system.name }))
+    const stationItems = systems.flatMap((system) =>
+      system.stations.map((station) => ({ label: station, group: system.name }))
     );
 
-    const CONFIG = {
-      // 是否啟用鎖定結果。true = 啟用，false = 完全隨機。
-      LOCK_ENABLED: true,
+    const activityGroups = [
+      {
+        name: "吃吃喝喝",
+        items: [
+          "吃義大利麵", "吃火鍋", "吃燒烤", "吃拉麵", "喝手搖飲", "吃甜點", "逛夜市小吃"
+        ]
+      },
+      {
+        name: "閒晃放空",
+        items: [
+          "去公園走走", "逛百貨公司", "去書店晃晃", "去咖啡廳耍廢", "拍照打卡", "散步透透氣",
+          "逛唱片行", "隨便走走看緣分"
+        ]
+      },
+      {
+        name: "娛樂活動",
+        items: [
+          "看場電影", "唱KTV", "逛展覽", "打卡熱門景點", "去公園野餐"
+        ]
+      }
+    ];
 
-      // 從這個時間之後開始鎖定結果，格式為 HH:mm，24 小時制。
-      LOCK_AFTER_TIME: "18:00",
+    const activityItems = activityGroups.flatMap((group) =>
+      group.items.map((item) => ({ label: item, group: group.name }))
+    );
 
-      // 鎖定後一定會轉到的站名。
-      LOCK_STATION: "臺北車站"
-    };
-    const canvas = document.getElementById("wheel");
-    const ctx = canvas.getContext("2d");
-    const spinButton = document.getElementById("spinButton");
-    const result = document.getElementById("result");
-    const resultMeta = document.getElementById("resultMeta");
-    const stationCount = document.getElementById("stationCount");
-    const stationList = document.getElementById("stationList");
-    const clock = document.getElementById("clock");
+    // ---------- 共用轉盤引擎 ----------
     const colors = ["#d74838", "#f5b84b", "#3f8f5f", "#2f6fbd", "#7755a6", "#d66b2d"];
-    let rotation = -Math.PI / 2;
-    let spinning = false;
 
-    function isForcedTime() {
-      if (!CONFIG.LOCK_ENABLED) return false;
+    function normalizeAngle(angle) {
+      const full = Math.PI * 2;
+      return ((angle % full) + full) % full;
+    }
 
-      const [hourText, minuteText = "0"] = CONFIG.LOCK_AFTER_TIME.split(":");
+    function isForcedTime(config) {
+      if (!config.LOCK_ENABLED) return false;
+
+      const [hourText, minuteText = "0"] = config.LOCK_AFTER_TIME.split(":");
       const lockHour = Number(hourText);
       const lockMinute = Number(minuteText);
       const now = new Date();
@@ -377,120 +440,173 @@
       return now.getHours() * 60 + now.getMinutes() >= lockHour * 60 + lockMinute;
     }
 
-    function pickStation() {
-      if (isForcedTime()) {
-        return allStations.find((item) => item.station === CONFIG.LOCK_STATION) || allStations[0];
+    function createWheel(opts) {
+      // opts: { items, groupsLabel, resultDoneMeta(item), config: {LOCK_ENABLED, LOCK_AFTER_TIME, LOCK_LABEL}, ids: {...} }
+      const {
+        items, config,
+        canvasId, spinButtonId, resultId, resultMetaId,
+        countId, clockId, listId, listBuilder
+      } = opts;
+
+      const canvas = document.getElementById(canvasId);
+      const ctx = canvas.getContext("2d");
+      const spinButton = document.getElementById(spinButtonId);
+      const result = document.getElementById(resultId);
+      const resultMeta = document.getElementById(resultMetaId);
+      const countEl = document.getElementById(countId);
+      const clockEl = document.getElementById(clockId);
+      const listEl = document.getElementById(listId);
+
+      let rotation = -Math.PI / 2;
+      let spinning = false;
+
+      function pickItem() {
+        if (isForcedTime(config)) {
+          return items.find((item) => item.label === config.LOCK_LABEL) || items[0];
+        }
+        return items[Math.floor(Math.random() * items.length)];
       }
-      return allStations[Math.floor(Math.random() * allStations.length)];
-    }
 
-    function drawWheel(activeIndex = -1) {
-      const size = canvas.width;
-      const center = size / 2;
-      const radius = center - 28;
-      const slice = (Math.PI * 2) / allStations.length;
-      ctx.clearRect(0, 0, size, size);
-      ctx.save();
-      ctx.translate(center, center);
-      ctx.rotate(rotation);
+      function indexForItem(target) {
+        return items.findIndex((item) => item.label === target.label && item.group === target.group);
+      }
 
-      allStations.forEach((item, index) => {
-        const start = index * slice;
-        const end = start + slice;
+      function drawWheel(activeIndex = -1) {
+        const size = canvas.width;
+        const center = size / 2;
+        const radius = center - 28;
+        const slice = (Math.PI * 2) / items.length;
+        ctx.clearRect(0, 0, size, size);
+        ctx.save();
+        ctx.translate(center, center);
+        ctx.rotate(rotation);
+
+        items.forEach((item, index) => {
+          const start = index * slice;
+          const end = start + slice;
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.arc(0, 0, radius, start, end);
+          ctx.closePath();
+          ctx.fillStyle = index === activeIndex ? "#251f18" : colors[index % colors.length];
+          ctx.fill();
+
+          ctx.strokeStyle = "rgba(255, 255, 255, .38)";
+          ctx.lineWidth = 1;
+          ctx.stroke();
+
+          const labelEvery = Math.max(1, Math.round(items.length / 16));
+          if (index % labelEvery === 0) {
+            ctx.save();
+            ctx.rotate(start + slice / 2);
+            ctx.textAlign = "right";
+            ctx.fillStyle = "#fffaf2";
+            ctx.font = "500 22px Microsoft JhengHei, sans-serif";
+            ctx.fillText(item.label, radius - 18, 8);
+            ctx.restore();
+          }
+        });
+
         ctx.beginPath();
-        ctx.moveTo(0, 0);
-        ctx.arc(0, 0, radius, start, end);
-        ctx.closePath();
-        ctx.fillStyle = index === activeIndex ? "#251f18" : colors[index % colors.length];
-        ctx.fill();
-
-        ctx.strokeStyle = "rgba(255, 255, 255, .38)";
-        ctx.lineWidth = 1;
+        ctx.arc(0, 0, radius, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(37, 31, 24, .7)";
+        ctx.lineWidth = 12;
         ctx.stroke();
-
-        if (index % 8 === 0) {
-          ctx.save();
-          ctx.rotate(start + slice / 2);
-          ctx.textAlign = "right";
-          ctx.fillStyle = "#fffaf2";
-          ctx.font = "500 22px Microsoft JhengHei, sans-serif";
-          ctx.fillText(item.station, radius - 18, 8);
-          ctx.restore();
-        }
-      });
-
-      ctx.beginPath();
-      ctx.arc(0, 0, radius, 0, Math.PI * 2);
-      ctx.strokeStyle = "rgba(37, 31, 24, .7)";
-      ctx.lineWidth = 12;
-      ctx.stroke();
-      ctx.restore();
-    }
-
-    function indexForStation(target) {
-      return allStations.findIndex((item) => item.station === target.station && item.system === target.system);
-    }
-
-    function spin() {
-      if (spinning) return;
-      spinning = true;
-      spinButton.disabled = true;
-      result.textContent = "轉動中...";
-      resultMeta.textContent = "命運正在進站。";
-
-      const target = pickStation();
-      const targetIndex = Math.max(0, indexForStation(target));
-      const slice = (Math.PI * 2) / allStations.length;
-      const current = rotation % (Math.PI * 2);
-      const pointerAngle = -Math.PI / 2;
-      const targetCenter = targetIndex * slice + slice / 2;
-      const desired = pointerAngle - targetCenter;
-      const fullTurns = 8 + Math.floor(Math.random() * 3);
-      const delta = fullTurns * Math.PI * 2 + normalizeAngle(desired - current);
-      const start = rotation;
-      const finish = start + delta;
-      const duration = 4300;
-      const startedAt = performance.now();
-
-      function animate(now) {
-        const t = Math.min(1, (now - startedAt) / duration);
-        const eased = 1 - Math.pow(1 - t, 4);
-        rotation = start + (finish - start) * eased;
-        drawWheel(targetIndex);
-        if (t < 1) {
-          requestAnimationFrame(animate);
-          return;
-        }
-
-        rotation = finish;
-        drawWheel(targetIndex);
-        result.textContent = target.station;
-        resultMeta.textContent = `${target.system} · 本次結果`;
-        spinButton.disabled = false;
-        spinning = false;
+        ctx.restore();
       }
 
-      requestAnimationFrame(animate);
+      function spin() {
+        if (spinning) return;
+        spinning = true;
+        spinButton.disabled = true;
+        result.textContent = "轉動中...";
+        resultMeta.textContent = "命運正在旋轉。";
+
+        const target = pickItem();
+        const targetIndex = Math.max(0, indexForItem(target));
+        const slice = (Math.PI * 2) / items.length;
+        const current = rotation % (Math.PI * 2);
+        const pointerAngle = -Math.PI / 2;
+        const targetCenter = targetIndex * slice + slice / 2;
+        const desired = pointerAngle - targetCenter;
+        const fullTurns = 8 + Math.floor(Math.random() * 3);
+        const delta = fullTurns * Math.PI * 2 + normalizeAngle(desired - current);
+        const start = rotation;
+        const finish = start + delta;
+        const duration = 4300;
+        const startedAt = performance.now();
+
+        function animate(now) {
+          const t = Math.min(1, (now - startedAt) / duration);
+          const eased = 1 - Math.pow(1 - t, 4);
+          rotation = start + (finish - start) * eased;
+          drawWheel(targetIndex);
+          if (t < 1) {
+            requestAnimationFrame(animate);
+            return;
+          }
+
+          rotation = finish;
+          drawWheel(targetIndex);
+          result.textContent = target.label;
+          resultMeta.textContent = `${target.group} · 本次結果`;
+          spinButton.disabled = false;
+          spinning = false;
+        }
+
+        requestAnimationFrame(animate);
+      }
+
+      function updateClock() {
+        const now = new Date();
+        clockEl.textContent = now.toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit" });
+      }
+
+      countEl.textContent = items.length;
+      listEl.textContent = listBuilder();
+      spinButton.addEventListener("click", spin);
+      updateClock();
+      setInterval(updateClock, 1000);
+      drawWheel();
     }
 
-    function normalizeAngle(angle) {
-      const full = Math.PI * 2;
-      return ((angle % full) + full) % full;
-    }
+    // ---------- 轉盤 1：捷運去哪裡 ----------
+    createWheel({
+      items: stationItems,
+      config: {
+        LOCK_ENABLED: true,
+        LOCK_AFTER_TIME: "18:00",
+        LOCK_LABEL: "國父紀念館"
+      },
+      canvasId: "wheel-station",
+      spinButtonId: "spinButton-station",
+      resultId: "result-station",
+      resultMetaId: "resultMeta-station",
+      countId: "stationCount-station",
+      clockId: "clock-station",
+      listId: "stationList-station",
+      listBuilder: () =>
+        systems.map((system) => `${system.name}: ${system.stations.join("、")}`).join("\n\n")
+    });
 
-    function updateClock() {
-      const now = new Date();
-      clock.textContent = now.toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit" });
-    }
-
-    stationCount.textContent = allStations.length;
-    stationList.textContent = systems
-      .map((system) => `${system.name}: ${system.stations.join("、")}`)
-      .join("\n\n");
-    spinButton.addEventListener("click", spin);
-    updateClock();
-    setInterval(updateClock, 1000);
-    drawWheel();
+    // ---------- 轉盤 2：到站要幹嘛 ----------
+    createWheel({
+      items: activityItems,
+      config: {
+        LOCK_ENABLED: true,
+        LOCK_AFTER_TIME: "18:00",
+        LOCK_LABEL: "吃義大利麵"
+      },
+      canvasId: "wheel-activity",
+      spinButtonId: "spinButton-activity",
+      resultId: "result-activity",
+      resultMetaId: "resultMeta-activity",
+      countId: "stationCount-activity",
+      clockId: "clock-activity",
+      listId: "stationList-activity",
+      listBuilder: () =>
+        activityGroups.map((group) => `${group.name}: ${group.items.join("、")}`).join("\n\n")
+    });
   </script>
 </body>
 </html>
