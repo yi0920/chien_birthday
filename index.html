@@ -215,6 +215,21 @@
       opacity: .72;
     }
 
+    .button-ghost {
+      min-height: 38px;
+      background: transparent;
+      color: var(--ink);
+      border: 1px solid var(--line);
+      box-shadow: none;
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    .stat:has(.button-ghost) {
+      display: grid;
+      align-items: end;
+    }
+
     .stats {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -286,7 +301,7 @@
 
       <section class="panel">
         <h1>捷運去哪裡</h1>
-        <p class="sub">抽到哪一站就出發。Demo 內建臺灣已營運捷運、輕軌系統的站名池。</p>
+        <p class="sub">抽到哪一站就出發。Demo 內建臺灣已營運捷運、輕軌系統的站名池，已經抽過的站不會再重複抽到。</p>
 
         <button id="spinButton-station" type="button">開始轉盤</button>
 
@@ -304,6 +319,14 @@
           <div class="stat">
             <span class="label">目前時間</span>
             <strong id="clock-station">--:--</strong>
+          </div>
+          <div class="stat">
+            <span class="label">尚未抽過</span>
+            <strong id="remainingCount-station">0</strong>
+          </div>
+          <div class="stat">
+            <span class="label"></span>
+            <button id="resetButton-station" class="button-ghost" type="button">重置已抽紀錄</button>
           </div>
         </div>
 
@@ -420,6 +443,12 @@
       group.items.map((item) => ({ label: item, group: group.name }))
     );
 
+    // 這些選項只會「出現在轉盤上」充版面，但實際上永遠不會被抽中（魚目混珠）。
+    // 把你想要排除的項目名稱填進這個陣列即可，要跟上面選項的文字完全一樣。
+    const ACTIVITY_DECOY_LABELS = [
+         "吃火鍋", "吃燒烤", "吃拉麵", "逛夜市小吃"
+    ];
+
     // ---------- 共用轉盤引擎 ----------
     const colors = ["#d74838", "#f5b84b", "#3f8f5f", "#2f6fbd", "#7755a6", "#d66b2d"];
 
@@ -441,11 +470,20 @@
     }
 
     function createWheel(opts) {
-      // opts: { items, groupsLabel, resultDoneMeta(item), config: {LOCK_ENABLED, LOCK_AFTER_TIME, LOCK_LABEL}, ids: {...} }
+      // opts: {
+      //   items, config: {LOCK_ENABLED, LOCK_AFTER_TIME, LOCK_LABEL},
+      //   noRepeat: boolean            -> 抽過的項目 (依 label) 不會再被抽到，直到全部抽完自動重置
+      //   excludeLabels: string[]      -> 這些項目只會出現在轉盤上，但永遠不會被實際抽中（魚目混珠）
+      //   canvasId, spinButtonId, resultId, resultMetaId, countId, clockId, listId, listBuilder,
+      //   remainingId, resetButtonId   -> (noRepeat 模式用) 顯示剩餘數量與重置按鈕
+      // }
       const {
         items, config,
+        noRepeat = false,
+        excludeLabels = [],
         canvasId, spinButtonId, resultId, resultMetaId,
-        countId, clockId, listId, listBuilder
+        countId, clockId, listId, listBuilder,
+        remainingId, resetButtonId
       } = opts;
 
       const canvas = document.getElementById(canvasId);
@@ -456,15 +494,48 @@
       const countEl = document.getElementById(countId);
       const clockEl = document.getElementById(clockId);
       const listEl = document.getElementById(listId);
+      const remainingEl = remainingId ? document.getElementById(remainingId) : null;
+      const resetButton = resetButtonId ? document.getElementById(resetButtonId) : null;
 
       let rotation = -Math.PI / 2;
       let spinning = false;
+      const usedLabels = new Set();
+
+      // 可被「一般隨機」抽中的項目池：
+      // - 排除魚目混珠項目 (excludeLabels)
+      // - 排除有鎖定設定的項目本身 (它只能透過強制鎖定時段抽到，平常完全不會進入隨機池)
+      // - 若開啟 noRepeat，排除已經抽過的站
+      function getPool() {
+        return items.filter((item) => {
+          if (excludeLabels.includes(item.label)) return false;
+          if (config.LOCK_ENABLED && config.LOCK_LABEL && item.label === config.LOCK_LABEL) return false;
+          if (noRepeat && usedLabels.has(item.label)) return false;
+          return true;
+        });
+      }
+
+      function updateRemaining() {
+        if (!remainingEl) return;
+        const remaining = items.filter((item) => !usedLabels.has(item.label)).length;
+        remainingEl.textContent = remaining;
+      }
+
+      let justReset = false;
 
       function pickItem() {
+        justReset = false;
         if (isForcedTime(config)) {
-          return items.find((item) => item.label === config.LOCK_LABEL) || items[0];
+          const forced = items.find((item) => item.label === config.LOCK_LABEL);
+          if (forced) return forced;
         }
-        return items[Math.floor(Math.random() * items.length)];
+
+        let pool = getPool();
+        if (pool.length === 0 && noRepeat) {
+          usedLabels.clear();
+          justReset = true;
+          pool = getPool();
+        }
+        return pool[Math.floor(Math.random() * pool.length)];
       }
 
       function indexForItem(target) {
@@ -549,7 +620,18 @@
           rotation = finish;
           drawWheel(targetIndex);
           result.textContent = target.label;
-          resultMeta.textContent = `${target.group} · 本次結果`;
+
+          if (noRepeat) {
+            const wasReset = justReset;
+            usedLabels.add(target.label);
+            resultMeta.textContent = wasReset
+              ? `${target.group} · 已抽完一輪，重新開始`
+              : `${target.group} · 本次結果`;
+            updateRemaining();
+          } else {
+            resultMeta.textContent = `${target.group} · 本次結果`;
+          }
+
           spinButton.disabled = false;
           spinning = false;
         }
@@ -565,6 +647,18 @@
       countEl.textContent = items.length;
       listEl.textContent = listBuilder();
       spinButton.addEventListener("click", spin);
+
+      if (resetButton) {
+        resetButton.addEventListener("click", () => {
+          if (spinning) return;
+          usedLabels.clear();
+          updateRemaining();
+          result.textContent = "尚未開轉";
+          resultMeta.textContent = "已重置抽過的紀錄。";
+        });
+      }
+
+      updateRemaining();
       updateClock();
       setInterval(updateClock, 1000);
       drawWheel();
@@ -576,8 +670,9 @@
       config: {
         LOCK_ENABLED: true,
         LOCK_AFTER_TIME: "18:00",
-        LOCK_LABEL: "國父紀念館"
+        LOCK_LABEL: "臺北車站"
       },
+      noRepeat: true,
       canvasId: "wheel-station",
       spinButtonId: "spinButton-station",
       resultId: "result-station",
@@ -585,11 +680,13 @@
       countId: "stationCount-station",
       clockId: "clock-station",
       listId: "stationList-station",
+      remainingId: "remainingCount-station",
+      resetButtonId: "resetButton-station",
       listBuilder: () =>
         systems.map((system) => `${system.name}: ${system.stations.join("、")}`).join("\n\n")
     });
 
-    // ---------- 轉盤 2：到站要幹嘛 ----------
+    // ---------- 轉盤 2：到站要幹嘛----------
     createWheel({
       items: activityItems,
       config: {
@@ -597,6 +694,7 @@
         LOCK_AFTER_TIME: "18:00",
         LOCK_LABEL: "吃義大利麵"
       },
+      excludeLabels: ACTIVITY_DECOY_LABELS,
       canvasId: "wheel-activity",
       spinButtonId: "spinButton-activity",
       resultId: "result-activity",
