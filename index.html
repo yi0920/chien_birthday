@@ -16,6 +16,8 @@
       --accent-ink: #ffffff;
       --accent2: #b6472f;
       --accent2-ink: #ffffff;
+      --accent3: #2f6fbd;
+      --accent3-ink: #ffffff;
       --red: #d74838;
       --yellow: #f5b84b;
       --blue: #2f6fbd;
@@ -119,6 +121,10 @@
       border-top-color: var(--accent2);
     }
 
+    .pointer.pointer-alt2 {
+      border-top-color: var(--accent3);
+    }
+
     .hub {
       position: absolute;
       display: grid;
@@ -139,6 +145,11 @@
       color: var(--accent2-ink);
     }
 
+    .hub.hub-alt2 {
+      background: var(--accent3);
+      color: var(--accent3-ink);
+    }
+
     .panel {
       background: color-mix(in srgb, var(--panel), transparent 4%);
       border: 1px solid var(--line);
@@ -156,6 +167,10 @@
 
     h1.h1-alt {
       color: var(--accent2);
+    }
+
+    h1.h1-alt2 {
+      color: var(--accent3);
     }
 
     .sub {
@@ -208,6 +223,11 @@
     button.button-alt {
       background: var(--accent2);
       box-shadow: 0 8px 18px rgb(182 71 47 / 22%);
+    }
+
+    button.button-alt2 {
+      background: var(--accent3);
+      box-shadow: 0 8px 18px rgb(47 111 189 / 22%);
     }
 
     button:disabled {
@@ -321,10 +341,6 @@
             <strong id="clock-station">--:--</strong>
           </div>
           <div class="stat">
-            <span class="label">尚未抽過</span>
-            <strong id="remainingCount-station">0</strong>
-          </div>
-          <div class="stat">
             <span class="label"></span>
             <button id="resetButton-station" class="button-ghost" type="button">重置已抽紀錄</button>
           </div>
@@ -350,7 +366,7 @@
 
       <section class="panel">
         <h1 class="h1-alt">到站要幹嘛</h1>
-        <p class="sub">出站之後，讓轉盤決定你要做什麼。</p>
+        <p class="sub">出站之後，讓轉盤決定你要做什麼，抽過的選項不會再重複，直到抽完一輪才重新開始。</p>
 
         <button id="spinButton-activity" class="button-alt" type="button">開始轉盤</button>
 
@@ -369,11 +385,55 @@
             <span class="label">目前時間</span>
             <strong id="clock-activity">--:--</strong>
           </div>
+          <div class="stat">
+            <span class="label"></span>
+            <button id="resetButton-activity" class="button-ghost" type="button">重置已抽紀錄</button>
+          </div>
         </div>
 
         <details>
           <summary>查看內建選項</summary>
           <div class="list" id="stationList-activity"></div>
+        </details>
+      </section>
+    </div>
+
+    <div class="section-divider">
+      <span class="section-title">轉盤 3：送禮對象</span>
+    </div>
+
+    <div class="app">
+      <section class="wheel-wrap" aria-label="送禮對象轉盤">
+        <div class="pointer pointer-alt2" aria-hidden="true"></div>
+        <canvas id="wheel-gift" width="900" height="900"></canvas>
+        <div class="hub hub-alt2">SPIN</div>
+      </section>
+
+      <section class="panel">
+        <h1 class="h1-alt2">送禮給誰</h1>
+        <p class="sub">轉到誰就送誰，抽過的人會從轉盤上移除機會，直到全部抽完可以按重置再抽一輪。</p>
+
+        <button id="spinButton-gift" class="button-alt2" type="button">開始轉盤</button>
+
+        <div class="result" aria-live="polite">
+          <span class="label">送禮對象</span>
+          <div class="station" id="result-gift">尚未開轉</div>
+          <div class="meta" id="resultMeta-gift">按下按鈕決定要送誰。</div>
+        </div>
+
+        <div class="stats">
+          <div class="stat">
+            <span class="label">名單人數</span>
+            <strong id="stationCount-gift">0</strong>
+          </div>
+          <div class="stat" style="grid-column: 1 / -1;">
+            <button id="resetButton-gift" class="button-ghost" type="button">重置已抽紀錄</button>
+          </div>
+        </div>
+
+        <details>
+          <summary>查看名單</summary>
+          <div class="list" id="stationList-gift"></div>
         </details>
       </section>
     </div>
@@ -402,19 +462,19 @@
       {
         name: "吃吃喝喝",
         items: [
-          "吃義大利麵", "吃火鍋", "吃燒烤", "吃拉麵", "吃泰式", "喝手搖飲", "吃甜點", "逛小吃", "吃冰"
+          "吃義大利麵", "吃火鍋", "吃燒烤", "吃拉麵", "吃韓式", "吃泰式", "喝手搖飲", "吃甜點", "逛小吃", "吃冰" , "找一家 Google 4.8⭐以上" 
         ]
       },
       {
         name: "閒晃放空",
         items: [
-          "去公園走走", "逛百貨公司", "去書店晃晃", "買衣服",  "散步透透氣", "逛唱片行"
+          "逛寶雅" , "去公園走走", "逛百貨公司", "去書店晃晃", "買衣服",  "逛唱片行", "幫對方穿搭"
         ]
       },
       {
-        name: "默契大考驗",
+        name: "交換驚喜",
         items: [
-          "轉一顆扭蛋給對方" , "買一杯飲料給對方" , "買神秘禮物給壽星"
+          "每人挑一樣零食分享" , "轉一顆扭蛋給對方" , "買一杯飲料給對方" , "買神秘禮物給壽星" , "找一間多拿滋每人挑一樣送對方" , "去超商每人挑一種酒送對方"
         ]
       },
       {
@@ -432,8 +492,22 @@
     // 這些選項只會「出現在轉盤上」充版面，但實際上永遠不會被抽中（魚目混珠）。
     // 把你想要排除的項目名稱填進這個陣列即可，要跟上面選項的文字完全一樣。
     const ACTIVITY_DECOY_LABELS = [
-         "吃泰式" , "吃火鍋", "吃燒烤", "吃拉麵", "逛小吃"
+         "吃泰式" , "吃火鍋", "吃燒烤", "吃拉麵", "吃韓式", "逛小吃"
     ];
+
+    // 送禮對象名單。先放範例名字，請自行替換成你要的人名（一個字串一個人）。
+    const giftGroups = [
+      {
+        name: "送禮名單",
+        items: [
+          "芊", "凱", "恆", "丞", "婷", "沁", "燊"
+        ]
+      }
+    ];
+
+    const giftItems = giftGroups.flatMap((group) =>
+      group.items.map((item) => ({ label: item, group: group.name }))
+    );
 
     // ---------- 共用轉盤引擎 ----------
     const colors = ["#d74838", "#f5b84b", "#3f8f5f", "#2f6fbd", "#7755a6", "#d66b2d"];
@@ -478,7 +552,7 @@
       const result = document.getElementById(resultId);
       const resultMeta = document.getElementById(resultMetaId);
       const countEl = document.getElementById(countId);
-      const clockEl = document.getElementById(clockId);
+      const clockEl = clockId ? document.getElementById(clockId) : null;
       const listEl = document.getElementById(listId);
       const remainingEl = remainingId ? document.getElementById(remainingId) : null;
       const resetButton = resetButtonId ? document.getElementById(resetButtonId) : null;
@@ -487,22 +561,28 @@
       let spinning = false;
       const usedLabels = new Set();
 
-      // 可被「一般隨機」抽中的項目池：
-      // - 排除魚目混珠項目 (excludeLabels)
-      // - 排除有鎖定設定的項目本身 (它只能透過強制鎖定時段抽到，平常完全不會進入隨機池)
-      // - 若開啟 noRepeat，排除已經抽過的站
-      function getPool() {
+      // 「可以被實際抽到」的完整項目範圍：
+      // 排除魚目混珠項目 (excludeLabels)，以及排除有鎖定設定的項目本身
+      // (它只能透過強制鎖定時段抽到，平常完全不會進入隨機池)
+      function getSelectableUniverse() {
         return items.filter((item) => {
           if (excludeLabels.includes(item.label)) return false;
           if (config.LOCK_ENABLED && config.LOCK_LABEL && item.label === config.LOCK_LABEL) return false;
-          if (noRepeat && usedLabels.has(item.label)) return false;
           return true;
         });
       }
 
+      // 一般隨機抽選池：在可抽範圍之上，若開啟 noRepeat 再排除已經抽過的項目
+      function getPool() {
+        const universe = getSelectableUniverse();
+        if (!noRepeat) return universe;
+        return universe.filter((item) => !usedLabels.has(item.label));
+      }
+
       function updateRemaining() {
         if (!remainingEl) return;
-        const remaining = items.filter((item) => !usedLabels.has(item.label)).length;
+        const universe = getSelectableUniverse();
+        const remaining = universe.filter((item) => !usedLabels.has(item.label)).length;
         remainingEl.textContent = remaining;
       }
 
@@ -510,6 +590,7 @@
 
       function pickItem() {
         justReset = false;
+
         if (isForcedTime(config)) {
           const forced = items.find((item) => item.label === config.LOCK_LABEL);
           if (forced) return forced;
@@ -521,6 +602,7 @@
           justReset = true;
           pool = getPool();
         }
+
         return pool[Math.floor(Math.random() * pool.length)];
       }
 
@@ -590,7 +672,7 @@
         const delta = fullTurns * Math.PI * 2 + normalizeAngle(desired - current);
         const start = rotation;
         const finish = start + delta;
-        const duration = 4300;
+        const duration = 1500;
         const startedAt = performance.now();
 
         function animate(now) {
@@ -626,6 +708,7 @@
       }
 
       function updateClock() {
+        if (!clockEl) return;
         const now = new Date();
         clockEl.textContent = now.toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit" });
       }
@@ -646,7 +729,7 @@
 
       updateRemaining();
       updateClock();
-      setInterval(updateClock, 1000);
+      if (clockEl) setInterval(updateClock, 1000);
       drawWheel();
     }
 
@@ -672,7 +755,7 @@
         systems.map((system) => `${system.name}: ${system.stations.join("、")}`).join("\n\n")
     });
 
-    // ---------- 轉盤 2：到站要幹嘛----------
+    // ---------- 轉盤 2：到站要幹嘛（抽過不重複，直到抽完一輪重新開始）----------
     createWheel({
       items: activityItems,
       config: {
@@ -680,6 +763,7 @@
         LOCK_AFTER_TIME: "18:00",
         LOCK_LABEL: "吃義大利麵"
       },
+      noRepeat: true,
       excludeLabels: ACTIVITY_DECOY_LABELS,
       canvasId: "wheel-activity",
       spinButtonId: "spinButton-activity",
@@ -688,8 +772,29 @@
       countId: "stationCount-activity",
       clockId: "clock-activity",
       listId: "stationList-activity",
+      remainingId: "remainingCount-activity",
+      resetButtonId: "resetButton-activity",
       listBuilder: () =>
         activityGroups.map((group) => `${group.name}: ${group.items.join("、")}`).join("\n\n")
+    });
+
+    // ---------- 轉盤 3：送禮對象（沒有時間鎖定，單純抽過就少一個）----------
+    createWheel({
+      items: giftItems,
+      config: {
+        LOCK_ENABLED: false
+      },
+      noRepeat: true,
+      canvasId: "wheel-gift",
+      spinButtonId: "spinButton-gift",
+      resultId: "result-gift",
+      resultMetaId: "resultMeta-gift",
+      countId: "stationCount-gift",
+      listId: "stationList-gift",
+      remainingId: "remainingCount-gift",
+      resetButtonId: "resetButton-gift",
+      listBuilder: () =>
+        giftGroups.map((group) => `${group.name}: ${group.items.join("、")}`).join("\n\n")
     });
   </script>
 </body>
